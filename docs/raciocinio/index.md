@@ -16,4 +16,5 @@ foi feito assim — que é exatamente o que uma defesa pergunta.
 | Exercício — MLP | [Raciocínio do MLP](mlp.md) — o design do +1, a checagem de gradiente e o empate honesto do Ex. 4 |
 | Exercício — VAE | *após a entrega* |
 | Projeto — EDA | [Raciocínio do EDA](eda.md) — inclui as perguntas prováveis da prova de projeto |
-| Projeto — Classificação e Generativo | *após cada entrega* |
+| Projeto — Classificação | [Raciocínio da Classificação](classificacao.md) — a ordem dos commits que protege o teste, o limiar pelo custo e as perguntas prováveis da prova |
+| Projeto — Generativo | *após a entrega* |

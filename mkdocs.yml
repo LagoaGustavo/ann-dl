@@ -1,9 +1,10 @@
 site_name: ANN & DL — Gustavo Lagôa
 site_author: Lagôa, G.; El Orra, D.
 site_description: Entregas de Redes Neurais Artificiais e Deep Learning — Insper 2026.2
-site_url: https://lagoass.github.io/ann-dl
-repo_url: https://github.com/Lagoass/ann-dl
-repo_name: Lagoass/ann-dl
+# Fork de Lagoass/ann-dl (perdemos o acesso àquela conta em nov/2026; o histórico é o mesmo)
+site_url: https://lagoagustavo.github.io/ann-dl
+repo_url: https://github.com/LagoaGustavo/ann-dl
+repo_name: LagoaGustavo/ann-dl
 
 theme:
   name: material
@@ -161,4 +162,5 @@ nav:
     - Perceptron: raciocinio/perceptron.md
     - MLP: raciocinio/mlp.md
     - Projeto — EDA: raciocinio/eda.md
+    - Projeto — Classificação: raciocinio/classificacao.md
   - Sobre este site: setup/index.md

@@ -6,7 +6,15 @@
 
     Prof. Humberto Sandmann
 
-**Gustavo Lagôa** — [`@Lagoass`](https://github.com/Lagoass){:target="_blank"}
+**Gustavo Lagôa** — [`@LagoaGustavo`](https://github.com/LagoaGustavo){:target="_blank"}
+(antes [`@Lagoass`](https://github.com/Lagoass){:target="_blank"})
+
+!!! note "Repositório migrado em 17/nov"
+
+    Perdemos o acesso à conta `@Lagoass`, então este repositório é um **fork** de
+    [`Lagoass/ann-dl`](https://github.com/Lagoass/ann-dl){:target="_blank"} com o mesmo
+    histórico de commits: as datas das entregas anteriores (EDA em 08/out, MLP em 27/out) são
+    as originais. A entrega 2 foi feita aqui, com autorização do professor para 17/nov.
 
 Este site reúne as entregas individuais e em equipe da disciplina. Cada entrega tem sua
 própria pasta (`index.md` + `code/` + `figures/`), e a seção
@@ -31,7 +39,7 @@ material de preparação para a defesa oral.
 Visão geral, equipe e dataset: [página do projeto](projects/index.md).
 
 - [x] [1. EDA](projects/eda/index.md) · entregue em **08/out** ✅ · 20% — Adult Income, classificação, com Deena El Orra
-- [ ] [2. Classificação](projects/classification/index.md) · **05/nov** · 60%
+- [x] [2. Classificação](projects/classification/index.md) · entregue em **17/nov** ✅ (prazo 13/nov; nova data autorizada pelo professor) · 60%
 - [ ] [3. Generativo](projects/generative/index.md) · **20/nov** · 20%
 
 ## Provas
@@ -44,7 +52,7 @@ Visão geral, equipe e dataset: [página do projeto](projects/index.md).
 !!! warning "Submissão"
 
     Cada entrega é submetida pelo formulário do enunciado correspondente, com o link
-    `https://lagoass.github.io/ann-dl/<seção>/<slug>/`. O prazo é o timestamp do **último
+    `https://lagoagustavo.github.io/ann-dl/<seção>/<slug>/`. O prazo é o timestamp do **último
     commit** que toca a pasta da entrega — commits contam até 23:59 do dia.
 
 ## Referências da disciplina

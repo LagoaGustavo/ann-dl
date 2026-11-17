@@ -3,6 +3,7 @@
 !!! abstract "Enunciados"
 
     [Projects → EDA](https://insper.github.io/ann-dl/2026.2/projects/eda/){:target='_blank'}
+    · [Projects → Classification or Regression](https://insper.github.io/ann-dl/2026.2/projects/supervised/){:target='_blank'}
 
 O projeto é **um só**, feito em equipe sobre **o mesmo dataset**, e entregue em três partes
 ao longo do semestre, cada uma com data e peso próprios.
@@ -11,7 +12,7 @@ ao longo do semestre, cada uma com data e peso próprios.
 
 | Nome completo | E-mail | GitHub |
 |---------------|--------|--------|
-| Gustavo Doniani Lagôa Gomes | gustavog6@al.insper.edu.br | [@Lagoass](https://github.com/Lagoass) |
+| Gustavo Doniani Lagôa Gomes | gustavog6@al.insper.edu.br | [@LagoaGustavo](https://github.com/LagoaGustavo) (antes [@Lagoass](https://github.com/Lagoass)) |
 | Deena El Orra | deenaeo@al.insper.edu.br | [@DeenaElOrra](https://github.com/DeenaElOrra) |
 
 Os nomes se repetem no cabeçalho de cada entrega — quem corrige pode abrir uma página
@@ -22,7 +23,7 @@ sozinha, sem passar por aqui.
 | # | Entrega | Prazo | Peso no projeto | Página |
 |---|---------|-------|-----------------|--------|
 | 1 | EDA | 08/out | 20% | [EDA](eda/index.md) |
-| 2 | Classificação | 05/nov | 60% | [Classificação](classification/index.md) |
+| 2 | Classificação | 13/nov (entregue em 17/nov, com autorização do professor) | 60% | [Classificação](classification/index.md) |
 | 3 | Generativo | 20/nov | 20% | [Generativo](generative/index.md) |
 
 !!! danger "A nota do projeto é limitada pela prova de projeto (19/nov)"
@@ -54,7 +55,8 @@ E a classificação não é trivial: o melhor classificador "burro" (sempre `≤
 ## Status
 
 - [x] **1. EDA** — entregue em 08/out
-- [ ] **2. Classificação**
+- [x] **2. Classificação** — entregue em 17/nov (repositório migrado para o fork
+  [`LagoaGustavo/ann-dl`](https://github.com/LagoaGustavo/ann-dl), mesmo histórico)
 - [ ] **3. Generativo**
 
 ## Registro de decisões
@@ -66,3 +68,8 @@ E a classificação não é trivial: o melhor classificador "burro" (sempre `≤
 | 08/out | Faltantes de `workclass`/`occupation` viram a categoria `"Unknown"`, não a moda | A ausência é informativa: só 10.40% dessas pessoas ganham >50K, contra 24.08% no geral |
 | 08/out | `log1p` em `capital-gain`/`capital-loss`, sem remover linhas | A regra do IQR marcaria como outlier toda pessoa com ganho de capital — 21.3% da classe positiva do treino |
 | 08/out | `capital-gain` mantido, mas sinalizado como vazamento parcial | ≥ 7000 implica >50K em 98.6% dos casos; a próxima entrega mede o modelo com e sem ele |
+| 17/nov | Repositório migrado para o fork `LagoaGustavo/ann-dl` | Perdemos o acesso à conta `@Lagoass`; o fork preserva o histórico e as datas das entregas anteriores |
+| 17/nov | Validação = 20% do treino do EDA (20823 / 5206), pipeline ajustado só no sub-treino | O teste do EDA é usado uma única vez; todas as escolhas precisam de um conjunto que não seja o teste |
+| 17/nov | Métrica principal PR-AUC; critério: logística + 0.01 e > dp entre seeds; custo C_FN = 3·C_FP | 24.09% de positivos: a acurácia não discrimina; escrito antes de treinar (commit `0b77e07`) |
+| 17/nov | Rede final 50 → 64 → 1, ReLU, dropout 0.3, lr 3e-3, `pos_weight` 3.15 | Maior PR-AUC de validação entre 27 configurações (0.7773 ± 0.0039); congelada antes do teste |
+| 17/nov | Resultado: MLP 0.7964 ± 0.0031 no teste, contra 0.7517 da logística; o HGB faz 0.8409 | Critério atingido, mas o boosting é melhor em dado tabular, e isso é dito no relatório |
