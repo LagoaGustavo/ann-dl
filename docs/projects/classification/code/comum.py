@@ -70,8 +70,9 @@ SEEDS_BUSCA = [42, 43, 44]
 SEEDS_FINAIS = [42, 43, 44, 45, 46]
 
 # Configuração congelada no fim do passo 4 (escolhida SÓ pela validação). O passo 5 usa
-# exatamente esta. Preenchida depois de rodar s4_regularizacao.py.
-CONFIG_ESCOLHIDA = None
+# exatamente esta. Vencedora da busca: maior PR-AUC média de validação, 0.7773 ± 0.0039
+# (3 seeds) entre 27 configurações — e a menor rede entre as que empatam dentro de 1 dp.
+CONFIG_ESCOLHIDA = {"larguras": (64,), "lr": 3e-3, "dropout": 0.3}
 
 
 def secao(txt):
