@@ -76,7 +76,7 @@ lr 0.0001  | épocas rodadas  78 | melhor época  63 | perda val 0.5809 | PR-AUC
 ================================================================================
 3B — REDE BASE: lr 1e-3, batch 256, 100 épocas SEM parar (para ver o overfitting)
 ================================================================================
-tempo: 4.5s (0.04s por época, 82 passos)
+tempo: 4.5s (0.05s por época, 82 passos)
 melhor época (menor perda de validação): 11 | a parada antecipada pararia na época 26
   época   1 | perda treino 0.6111 | perda val 0.6113 | gap +0.0002 | PR-AUC val 0.7235
   época   5 | perda treino 0.5617 | perda val 0.5821 | gap +0.0203 | PR-AUC val 0.7534

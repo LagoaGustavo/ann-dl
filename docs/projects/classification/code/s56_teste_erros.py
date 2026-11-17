@@ -1,7 +1,8 @@
 """Passos 5 e 6 — avaliação ÚNICA no teste e análise de erros.
 
-Só existe depois do commit que congelou CONFIG_ESCOLHIDA (passo 4): nada aqui volta a
-mexer em configuração ou limiar. O limiar de cada modelo é escolhido NA VALIDAÇÃO.
+Commitado depois do commit que congelou CONFIG_ESCOLHIDA (passo 4). Este script só LÊ a
+configuração: não tem nenhum laço de escolha. A época de parada e o limiar de cada modelo
+vêm SÓ da validação; o teste é só medido.
 Gera as Figuras 3 a 7.
 """
 import numpy as np

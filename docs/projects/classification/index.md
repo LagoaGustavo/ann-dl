@@ -41,8 +41,10 @@ ai_use: "Claude (Claude Code) como par de programação no código, nas figuras 
     [`code/`](https://github.com/LagoaGustavo/ann-dl/tree/main/docs/projects/classification/code){:target='_blank'}.
     A saída completa da última execução fica em
     [`code/saida.txt`](https://github.com/LagoaGustavo/ann-dl/blob/main/docs/projects/classification/code/saida.txt){:target='_blank'}.
-    Os scripts importam o `pipeline.py` do EDA sem copiá-lo e usam seeds fixas, então
-    rodar de novo dá os mesmos números. A execução completa leva cerca de 6 minutos numa CPU.
+    Os scripts importam o `pipeline.py` do EDA sem copiá-lo e usam seeds fixas. Com as
+    versões fixadas em `code/requirements.txt` e na mesma CPU, rodar de novo dá os mesmos
+    números. Em outra máquina ou versão do PyTorch, as casas finais e as épocas de parada
+    podem variar um pouco. A execução completa leva cerca de 6 minutos numa CPU.
 
     ``` shell
     pip install -r requirements.txt
@@ -85,9 +87,10 @@ treino do EDA, estratificado e com a mesma seed. O teste do EDA não é tocado.
 
 - O `ColumnTransformer` é ajustado **só no sub-treino** (`fit_transform`). A validação e o
   teste passam apenas por `transform`.
-- A prova é a média das 5 numéricas padronizadas. Ela dá exatamente 0 no sub-treino e
-  [0.0067, 0.0239, −0.0018, 0.0037, 0.0111] na validação. Se a validação tivesse entrado no
-  ajuste, essa média também seria 0.
+- A prova é a média das 5 numéricas padronizadas. Ela dá 0 (até a 4ª casa) no sub-treino e
+  [0.0067, 0.0239, −0.0018, 0.0037, 0.0111] na validação. Se o ajuste tivesse usado
+  sub-treino + validação, o zero seria a média do conjunto unido, e o sub-treino deixaria de
+  dar 0. O 0 exato no sub-treino é a prova.
 - O resultado tem **50 colunas** e **0 NaN**, a mesma estrutura do EDA.
 - O corte de 1% do `min_frequency` agora é calculado em 20823 linhas, e mesmo assim
   nenhuma categoria mudou de balde.
@@ -104,8 +107,10 @@ correções ficam nesta entrega:
 3. A promessa do EDA, "treinar com e sem `capital-gain`", é cumprida na
    [seção 6](#6-error-analysis).
 
-**Decidido antes de treinar.** Estes três pontos estão em `comum.py`, no commit
-`0b77e07`, que é anterior a qualquer treino da rede.
+**Decidido antes de treinar.** Estes três pontos estão em `comum.py` desde o primeiro
+commit da entrega (`0b77e07`), antes de qualquer commit com código de treino. Todos os
+commits foram gravados em 17/nov: a ordem deles registra a sequência das etapas, não o
+horário de cada execução.
 
 - **Métrica principal: PR-AUC da classe `>50K`** (*average precision*).
     - Só 24.09% são positivos, e "sempre `≤50K`" já acerta 75.91%, então a acurácia não
@@ -177,7 +182,7 @@ flowchart LR
 
 | | Escolha | Por quê |
 |---|---|---|
-| Camadas ocultas | base: 2 (64, 32); final: 1 (64) | O dado é tabular e pequeno: o PCA do EDA mostra 43 direções reais nas 50 colunas. Não há fronteira simples (a silhueta pela renda é ≤ 0.25 em PCA, t-SNE e UMAP), então vale ter não linearidade, mas não profundidade. A busca do passo 4 confirmou que **uma** camada de 64 basta. |
+| Camadas ocultas | base: 2 (64, 32); final: 1 (64) | O dado é tabular e pequeno: o PCA do EDA mostra 43 direções reais nas 50 colunas. Não há fronteira simples (a silhueta pela renda é no máximo 0.253 em PCA, t-SNE e UMAP), então vale ter não linearidade, mas não profundidade. A busca do passo 4 confirmou que **uma** camada de 64 basta. |
 | Larguras | 64 → 32 (base) | Afunila das 50 entradas para poucas dezenas. Larguras de 128 e 3 camadas foram testadas no passo 4 e não melhoraram a validação. |
 | Ativação | ReLU | A derivada é 1 para x > 0. A sigmoide tem derivada ≤ 0.25 e encolhe o gradiente camada a camada. |
 | Inicialização | He (Kaiming normal) nas ocultas; Glorot na saída; vieses = 0 | He mantém a variância das ativações quando a ReLU zera metade delas. A saída é linear, então usa Glorot. |
@@ -207,8 +212,8 @@ parâmetros.
 |---|---|---|
 | Otimizador | **AdamW**, com weight decay só nas matrizes de pesos | A página *Optimization* recomenda Adam como padrão para MLP tabular. AdamW é a mesma atualização com o decaimento desacoplado, que a página *Regularization* recomenda no lugar de Adam + L2. Com `weight_decay = 0` ele é exatamente o Adam, o que deixa o passo 4 comparar "sem regularização" de forma limpa. Vieses e BatchNorm ficam fora do decaimento. |
 | Learning rate | 1e-3 na rede base; 3e-3 na final | A varredura abaixo deu a menor perda de validação em 1e-3. No passo 4, 3e-3 foi melhor quando combinado com dropout. |
-| Batch | 256 | Dá 82 passos por época em 20823 linhas, dentro da faixa 32–512. Cada época leva **0.04 s** na CPU, então nada nos obriga a usar batches maiores. |
-| Épocas | teto de 200, **parada antecipada com paciência 15** | Pela perda de validação, restaurando os melhores pesos (`copy.deepcopy` do `state_dict`), como no esqueleto do enunciado. O teto nunca é atingido. |
+| Batch | 256 | Dá 82 passos por época em 20823 linhas, dentro da faixa 32–512. Cada época leva **~0.05 s** na CPU (4.5 s para 100 épocas), então nada nos obriga a usar batches maiores. |
+| Épocas | teto de 200, **parada antecipada com paciência 15** | Pela perda de validação, restaurando os melhores pesos. O esqueleto do enunciado salva com `torch.save`/`torch.load`. Nós guardamos uma cópia em memória (`copy.deepcopy` do `state_dict`), que faz o mesmo sem arquivo. Nas corridas cujas épocas aparecem em `saida.txt` (varredura de lr, rede base e as 5 seeds finais), o máximo foi 78 épocas. |
 
 **Varredura de learning rate** (rede base, sem regularização, seed 42):
 
@@ -220,7 +225,9 @@ parâmetros.
 | 1e-4 | 78 | 63 | 0.5809 | 0.7542 |
 
 Nenhum valor diverge. O 1e-1 já fica claramente pior na perda e o 1e-4 leva 6 vezes mais
-épocas para chegar ao mesmo ponto, então ficamos com 1e-3.
+épocas para chegar ao mesmo ponto, então ficamos com 1e-3. O 1e-2 teve a maior PR-AUC
+(0.7651), com perda quase igual (0.5820). Escolhemos pela perda, que é o critério da parada
+antecipada, e por isso o passo 4 também testa 3e-3, entre os dois.
 
 ![Figura 1 — Curvas de treino e validação da rede base](figures/fig01-curvas.png)
 /// caption
@@ -239,14 +246,16 @@ validação por época.
 - **O overfitting começa por volta da época 11.** Daí em diante a perda de treino continua
   caindo (0.5424 → 0.4195 na época 100), mas a de validação sobe (0.5799 → 0.6977). O gap
   validação − treino cresce de +0.0375 para **+0.2782**: a rede decora o sub-treino.
-- **A perda e a PR-AUC discordam sobre *quando* parar.** A PR-AUC de validação ainda sobe
-  até **0.7727 na época 26** e só cai depois da época 50 (0.7553 na 100).
+- **A perda e a PR-AUC discordam sobre *quando* parar.** A PR-AUC de validação continua
+  subindo depois da época 11 (0.7588). Ela passa por **0.7727 na época 26**, chega ao pico
+  (~0.774) por volta das épocas 30–40 (Figura 1b) e depois cai (0.7701 na 50, 0.7553 na 100).
     - A perda (log-loss) pune a **confiança excessiva** assim que as probabilidades começam
       a ficar extremas.
     - A PR-AUC só olha a **ordenação** das pessoas, que ainda melhora por algumas épocas.
     - Parar pela perda é, portanto, conservador nesta rede.
-    - O passo 4 mostra que, com regularização, o problema praticamente some: a melhor
-      época vai para ~40–60, e perda e PR-AUC passam a concordar.
+    - O passo 4 mostra que, com dropout, a perda de validação deixa de subir (Figura 2a) e
+      a melhor época vai mais longe: 27.3 com dropout 0.3 e 60.3 com weight decay 0.1 +
+      dropout 0.3 na rede base, e 47.7 na configuração escolhida.
 
 ??? example "Código — `treino.py` (loop com parada antecipada) e `s23_rede_treino.py`"
 
@@ -295,7 +304,9 @@ antecipada (média ± dp de 3 seeds).
   sub-treino sem regularizar o suficiente com batches de 256, e a parada pela perda o
   interrompe cedo demais.
 - **Combinar weight decay e dropout dá o melhor resultado da parte A** (0.7720, +0.012
-  sobre "nenhuma"). A rede treina por mais tempo (época 60) sem degradar a validação.
+  sobre "nenhuma"). A rede treina por mais tempo (época 60) sem degradar a validação. Mas o
+  dp entre seeds é 0.0130, e o ganho fica dentro de 1 dp. A busca B confirma a direção: as
+  7 melhores configurações usam dropout.
 
 **B) Busca.** A grade foi largura/profundidade {64 · 64-32 · 128-64 · 128-64-32} × lr
 {1e-3 · 3e-3} × regularização {wd 0.1 · dropout 0.3 · wd 0.1 + dropout 0.3}. Três dessas
@@ -315,7 +326,39 @@ com 3 seeds, todas avaliadas **na validação**. As 10 melhores, ordenadas pela 
 | 8 | 64-32 · lr 3e-3 · wd 0.1 | 5377 | 0.7691 ± 0.0078 | 0.5754 | 11.0 |
 | 9 | 128-64-32 · lr 3e-3 · wd 0.1 | 16897 | 0.7683 ± 0.0079 | 0.5786 | 6.0 |
 | 10 | 128-64-32 · lr 1e-3 · wd 0.1 + dropout 0.3 | 16897 | 0.7641 ± 0.0055 | 0.5777 | 27.7 |
-| … | (17 outras, até BatchNorm com 0.7496) | | | | |
+| … | (17 outras, até BatchNorm com 0.7496; tabela completa abaixo) | | | | |
+
+??? note "Tabela completa — as 27 configurações, ordenadas pela PR-AUC de validação"
+
+    | # | Parte | Configuração | Parâmetros | PR-AUC val (média ± dp) | perda val | gap val − treino | melhor época |
+    |---|---|---|---|---|---|---|---|
+    | 1 | B | 64 · lr 3e-3 · dropout 0.3 | 3329 | 0.7773 ± 0.0039 | 0.5704 | +0.0583 | 47.7 |
+    | 2 | B | 64-32 · lr 3e-3 · wd 0.1 + dropout 0.3 | 5377 | 0.7762 ± 0.0012 | 0.5752 | +0.0612 | 32.0 |
+    | 3 | B | 64 · lr 3e-3 · wd 0.1 + dropout 0.3 | 3329 | 0.7727 ± 0.0023 | 0.5705 | +0.0471 | 54.7 |
+    | 4 | A+B | 64-32 · lr 1e-3 · weight decay 0.1 + dropout 0.3 | 5377 | 0.7720 ± 0.0130 | 0.5760 | +0.0585 | 60.3 |
+    | 5 | B | 64 · lr 1e-3 · dropout 0.3 | 3329 | 0.7718 ± 0.0100 | 0.5714 | +0.0489 | 92.3 |
+    | 6 | B | 64 · lr 1e-3 · wd 0.1 + dropout 0.3 | 3329 | 0.7702 ± 0.0096 | 0.5711 | +0.0435 | 119.7 |
+    | 7 | B | 64-32 · lr 3e-3 · dropout 0.3 | 5377 | 0.7695 ± 0.0171 | 0.5774 | +0.0470 | 19.3 |
+    | 8 | B | 64-32 · lr 3e-3 · wd 0.1 | 5377 | 0.7691 ± 0.0078 | 0.5754 | +0.0524 | 11.0 |
+    | 9 | B | 128-64-32 · lr 3e-3 · wd 0.1 | 16897 | 0.7683 ± 0.0079 | 0.5786 | +0.0540 | 6.0 |
+    | 10 | B | 128-64-32 · lr 1e-3 · wd 0.1 + dropout 0.3 | 16897 | 0.7641 ± 0.0055 | 0.5777 | +0.0465 | 27.7 |
+    | 11 | B | 128-64-32 · lr 1e-3 · wd 0.1 | 16897 | 0.7637 ± 0.0052 | 0.5755 | +0.0466 | 8.0 |
+    | 12 | A+B | 64-32 · lr 1e-3 · weight decay 0.1 | 5377 | 0.7631 ± 0.0053 | 0.5777 | +0.0472 | 19.7 |
+    | 13 | B | 128-64-32 · lr 1e-3 · dropout 0.3 | 16897 | 0.7610 ± 0.0069 | 0.5793 | +0.0383 | 23.0 |
+    | 14 | B | 128-64-32 · lr 3e-3 · dropout 0.3 | 16897 | 0.7607 ± 0.0040 | 0.5797 | +0.0350 | 10.0 |
+    | 15 | B | 128-64 · lr 3e-3 · wd 0.1 + dropout 0.3 | 14849 | 0.7605 ± 0.0042 | 0.5791 | +0.0377 | 10.3 |
+    | 16 | A | 64-32 · lr 1e-3 · nenhuma | 5377 | 0.7604 ± 0.0063 | 0.5794 | +0.0429 | 14.7 |
+    | 17 | A | 64-32 · lr 1e-3 · weight decay 0.01 | 5377 | 0.7602 ± 0.0062 | 0.5792 | +0.0422 | 14.7 |
+    | 18 | B | 64 · lr 3e-3 · wd 0.1 | 3329 | 0.7600 ± 0.0059 | 0.5755 | +0.0342 | 14.7 |
+    | 19 | B | 128-64-32 · lr 3e-3 · wd 0.1 + dropout 0.3 | 16897 | 0.7597 ± 0.0054 | 0.5791 | +0.0314 | 9.0 |
+    | 20 | B | 128-64 · lr 3e-3 · dropout 0.3 | 14849 | 0.7597 ± 0.0052 | 0.5799 | +0.0356 | 9.3 |
+    | 21 | B | 128-64 · lr 3e-3 · wd 0.1 | 14849 | 0.7594 ± 0.0085 | 0.5796 | +0.0416 | 5.3 |
+    | 22 | B | 128-64 · lr 1e-3 · wd 0.1 | 14849 | 0.7583 ± 0.0036 | 0.5777 | +0.0368 | 8.3 |
+    | 23 | A+B | 64-32 · lr 1e-3 · dropout 0.3 | 5377 | 0.7580 ± 0.0054 | 0.5813 | +0.0343 | 27.3 |
+    | 24 | B | 64 · lr 1e-3 · wd 0.1 | 3329 | 0.7580 ± 0.0038 | 0.5767 | +0.0329 | 34.3 |
+    | 25 | B | 128-64 · lr 1e-3 · wd 0.1 + dropout 0.3 | 14849 | 0.7579 ± 0.0025 | 0.5788 | +0.0306 | 17.0 |
+    | 26 | B | 128-64 · lr 1e-3 · dropout 0.3 | 14849 | 0.7569 ± 0.0011 | 0.5792 | +0.0296 | 15.0 |
+    | 27 | A | 64-32 · lr 1e-3 · BatchNorm | 5569 | 0.7496 ± 0.0002 | 0.5866 | +0.0402 | 7.3 |
 
 **Escolha e leitura.**
 
@@ -330,7 +373,11 @@ com 3 seeds, todas avaliadas **na validação**. As 10 melhores, ordenadas pela 
   (0.7773) deve ser lida assim. É por isso que o número que vale é o do teste, medido uma
   única vez no passo 5.
 - **A configuração foi congelada em `comum.py` (`CONFIG_ESCOLHIDA`) no commit `f89dce2`,
-  antes de existir o script do teste** (commit `1d4da6b`).
+  e o script do teste só entra no commit seguinte (`1d4da6b`).** A garantia de que o teste
+  não decidiu nada está no próprio código:
+    - `s56_teste_erros.py` só **lê** `CONFIG_ESCOLHIDA` e não tem nenhum laço de escolha;
+    - a época e o limiar vêm só da validação;
+    - o baseline do critério é escolhido pela PR-AUC de validação.
 
 ??? example "Código — `s4_regularizacao.py`"
 
@@ -360,11 +407,18 @@ O mínimo da MLP (seed 42) fica em 0.53 e o da logística em 0.49. O Dummy paga 
 ///
 
 **Por que o limiar fica em ~0.5 e não em 0.25.** Treinar com `pos_weight = 3.15` já
-equivale a pesar o FN cerca de 3 vezes mais que o FP. As probabilidades que a rede devolve
-saem "infladas" na mesma proporção, e o limiar 0.5 sobre elas corresponde a ~0.24 sobre a
-probabilidade real. Como o custo que escolhemos (3:1) é quase igual ao `pos_weight`, a
-varredura na validação cai perto de 0.5. A Figura 3 mostra que o custo é plano entre ~0.45
-e 0.55, então a escolha exata pouco importa.
+equivale a pesar o FN cerca de 3 vezes mais que o FP.
+
+- Quem sai multiplicado por ~3.15 são as **chances** p/(1−p) que a rede devolve, não as
+  probabilidades. O logit fica deslocado em ln 3.15 ≈ 1.15.
+- O limiar 0.5 na saída (chance 1) corresponde à chance real 1/3.15, ou seja,
+  p = 1/(1 + 3.15) ≈ 0.24.
+- O limiar de custo 0.25 na probabilidade real (chance 1/3) vira chance 3.15/3 ≈ 1.05 na
+  saída, ou seja, ≈ 0.51.
+- Por isso a varredura na validação cai entre 0.50 e 0.55.
+
+A Figura 3 mostra que o custo é plano entre ~0.45 e 0.55, então a escolha exata pouco
+importa.
 
 **Tabela única no teste (6508 linhas, 1568 `>50K`):**
 
@@ -431,7 +485,10 @@ seu limiar. Os subgrupos são as categorias que o EDA destacou. Nesta tabela:
 
 - FNR é a fração de `>50K` perdidos;
 - FPR é a fração de `≤50K` marcados como `>50K`;
-- o erro global é **0.1829**.
+- o erro global é **0.1829**;
+- para apontar o "maior erro", só entram subgrupos com **n ≥ 100**. Abaixo disso, uma
+  pessoa muda o erro em pontos percentuais: `marital-status = Married-AF-spouse`, por
+  exemplo, tem n = 6 e erro 0.5333, o que é ruído de amostra.
 
 | Subgrupo | n | % >50K | erro | FNR | FPR |
 |---|---|---|---|---|---|
@@ -449,6 +506,8 @@ seu limiar. Os subgrupos são as categorias que o EDA destacou. Nesta tabela:
 | capital: perda > 0 | 315 | 48.9% | 0.2330 | 0.0545 | 0.4037 |
 | capital: sem ganho nem perda | 5655 | 18.9% | 0.1815 | 0.1716 | 0.1838 |
 | capital-gain = 99999 (teto) | 35 | 100% | 0.0000 | 0.0000 | — |
+| capital-gain ≠ 99999 (resto) | 6473 | 23.7% | 0.1839 | 0.1288 | 0.2010 |
+| native-country = outros (raros, balde `infrequent`) | 434 | 21.9% | 0.1829 | 0.1684 | 0.1870 |
 | native-country = Mexico | 130 | 1.5% | 0.0246 | 0.5000 | 0.0172 |
 
 ![Figura 6 — Erro por subgrupo](figures/fig06-subgrupos.png)
@@ -461,22 +520,25 @@ no rótulo). A linha pontilhada é o erro global (0.183).
 
 1. **O maior erro está nos casados: Husband (32.5%), Married-civ-spouse (32.1%) e Wife
    (31.3%).** Quase todo esse erro é FP (FPR de 52–57%).
-    - *Hipótese:* "casado" é o sinal mais forte para `>50K` (44.7% contra 4.7% dos solteiros
-      no EDA). Com o custo 3:1, a rede prefere marcar como `>50K` quase todo casado com
+    - *Hipótese:* "casado" é um dos sinais mais fortes para `>50K` (3º na permutação; 44.7%
+      contra 4.7% dos solteiros no EDA). Com o custo 3:1, a rede prefere marcar como `>50K` quase todo casado com
       perfil médio. Nos casados a prevalência é ~45%, próxima da indecisão, então o erro
       se concentra ali.
     - O mesmo vale para Self-emp-inc (57.7% de `>50K`).
     - A taxa de erro alta é consequência da prevalência intermediária, não de um defeito
       da rede nesse grupo.
-2. **Mulheres, pessoas negras, jovens e quem não tem capital: o erro é baixo, mas é FN.**
+2. **Mulheres, pessoas negras e jovens: o erro é baixo, mas a FNR é alta.**
     - FNR das mulheres é 22.8%, contra 10.6% dos homens; das pessoas negras, 20.2%,
       contra 11.9% das brancas; dos menores de 30, 38.6%.
-    - *Hipótese:* a rede aprendeu as taxas-base do censo de 1994 (`>50K` é 11.9% entre as
-      mulheres e 30.0% entre os homens). Quem é `>50K` sendo de um grupo de taxa-base
+    - *Hipótese:* a rede aprendeu as taxas-base do censo de 1994. No teste, `>50K` é 11.9%
+      entre as mulheres e 30.0% entre os homens; no treino do EDA, 10.7% e 30.7%. Quem é `>50K` sendo de um grupo de taxa-base
       baixa fica com probabilidade baixa e é perdido.
     - É um viés herdado dos dados, e o passo 7 discute quem ele afeta.
 3. **Capital:** quem tem ganho de capital quase nunca é perdido (FNR 1.6%), e o teto
-   99999 tem erro zero (35 pessoas), como o EDA previa. Mas o FPR é de 44%: a rede trata
+   99999 tem erro zero (35 pessoas), como o EDA previa. Separando esse grupo, como o EDA
+   prometeu, o erro do resto sobe só de 0.1829 para 0.1839: os 35 acertos triviais não
+   inflam a acurácia. Nos países raros (balde `infrequent`), o erro é igual ao global
+   (0.1829). Mas o FPR é de 44%: a rede trata
    qualquer ganho de capital como sinal forte de `>50K`. Sem ganho nem perda, que é o
    grupo difícil (n = 5655), o erro é 18.2%.
 
@@ -503,7 +565,7 @@ válida.
 (média ± dp de 5 permutações).
 ///
 
-| Ordem | Rede (queda de PR-AUC) | EDA (amplitude da taxa de `>50K` + PC1) |
+| Ordem | Rede (queda de PR-AUC) | EDA (ordem qualitativa da síntese do EDA) |
 |---|---|---|
 | 1 | capital-gain (0.1273) | relationship |
 | 2 | education-num (0.0868) | marital-status |
@@ -518,8 +580,13 @@ válida.
 | 11 | native-country (0.0014) | race |
 | 12 | race (0.0006) | native-country |
 
-**Confere com o EDA?** Em boa parte, sim: a correlação de Spearman entre os dois rankings é
-**0.720**.
+A coluna do EDA é uma ordem **qualitativa**, montada pela equipe a partir da síntese do
+EDA: as amplitudes da Figura 8, as cargas da PC1 e as redundâncias. Pela amplitude pura da
+Figura 8, `occupation` (47.3 p.p.) e `workclass` (44.8 p.p.) viriam antes de
+`marital-status` (40.0 p.p.).
+
+**Confere com o EDA?** Em boa parte, sim: a correlação de Spearman entre os dois rankings,
+para a ordem da tabela, é **0.720**.
 
 - O núcleo é o mesmo: capital-gain, education-num, marital-status, age e occupation estão
   entre os 6 primeiros nos dois.
@@ -568,9 +635,12 @@ válida.
 
 - **Um único split.** Os ± são variação de seed, não de amostra. Com validação cruzada, a
   incerteza seria maior.
-- **Probabilidades descalibradas.** O `pos_weight` infla as probabilidades, então "p =
-  0.53" não significa 53% de chance. Para usar a probabilidade em si, seria preciso
-  calibrar, com temperature scaling na validação, por exemplo.
+- **Probabilidades descalibradas.** O `pos_weight` desloca o logit em ≈ ln 3.15, então
+  "p = 0.53" não significa 53% de chance. Para usar a probabilidade em si, seria preciso
+  calibrar na validação. Uma saída é subtrair ln(`pos_weight`) do logit, que é a correção de
+  prior da página *Imbalance*. Outra é ajustar um Platt scaling, σ(a·u + b). Temperature
+  scaling sozinho, σ(u/T), não resolve: ele muda a escala do logit, mas não remove o
+  deslocamento.
 - **Viés de seleção.** A configuração é a melhor de 27 na validação.
 - **Parada pela perda.** É conservadora nesta rede (passo 3). Parar pela PR-AUC poderia
   render um pouco mais.
@@ -610,4 +680,4 @@ oferta ou a um benefício, os erros **não se distribuem por igual**.
 | 5 | Otimizador, taxa, batch e época de parada | **AdamW** (weight decay 0, equivale a Adam), **lr 3e-3**, **batch 256**; parou nas épocas 55/71/62/58/48 (média 58.8) e restaurou os pesos das épocas 40/56/47/43/33 (média 43.8) |
 | 6 | Métrica principal da rede no teste (média ± dp) | PR-AUC **0.7964 ± 0.0031** (5 seeds; ROC-AUC 0.9175 ± 0.0010) |
 | 7 | Critério de sucesso atingido? | **Sim**: +0.0447 sobre a logística (exigido ≥ +0.01 e > dp 0.0031) |
-| 8 | Subgrupo com o maior erro e seu valor | **relationship = Husband**: erro **0.3251** (n = 2658; FPR 0.5256, FNR 0.0746), contra 0.1829 no geral |
+| 8 | Subgrupo com o maior erro e seu valor | **relationship = Husband**: erro **0.3251** (n = 2658; FPR 0.5256, FNR 0.0746), contra 0.1829 no geral. É o maior erro entre os subgrupos com n ≥ 100 (Married-AF-spouse, n = 6, tem 0.5333, mas é ruído de amostra) |

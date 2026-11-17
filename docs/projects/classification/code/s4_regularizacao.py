@@ -111,6 +111,7 @@ b.invert_yaxis()
 b.set_xlim(parteA.prauc_val_media.min() - 0.01,
            (parteA.prauc_val_media + parteA.prauc_val_dp).max() + 0.005)
 b.set_xlabel("PR-AUC na validação (com parada antecipada)")
+b.set_ylabel("regularização (rede 64-32, lr 1e-3)")
 b.set_title("(b) PR-AUC de validação por regularização")
 b.legend(loc="lower right", fontsize=8)
 fig.suptitle("Figura 2 — Regularização: rede 64-32, lr 1e-3, um fator por vez (validação)")

@@ -13,9 +13,11 @@ Cinco regras mandam em todo o resto:
   tem alvo contínuo. O split também é o do EDA: importamos o `pipeline.py`, sem copiar.
 - **O teste é usado uma única vez.** Se ele ajudar em qualquer escolha, o passo 5 vale no
   máximo metade. Daí a ordem dos commits: critério → baselines → busca → **congelar a
-  configuração** → só então o script do teste.
-- **A métrica e o critério ficam escritos antes de treinar.** Estão em `comum.py`, no
-  commit `0b77e07`.
+  configuração** → só então o script do teste. Os commits registram a **ordem** das etapas,
+  não o horário: todos foram gravados em 17/nov. A garantia real está no código, porque o
+  script do teste só **lê** a configuração congelada e não escolhe nada.
+- **A métrica e o critério ficam escritos antes de treinar.** Estão em `comum.py` desde o
+  primeiro commit da entrega (`0b77e07`).
 - **A saída é um logit e a perda é `BCEWithLogitsLoss`**, com `pos_weight` para o
   desbalanceamento.
 - **O limiar é escolhido na validação e justificado pelo custo dos erros**, não pelo
@@ -55,11 +57,11 @@ aparece em todas as tabelas para sermos honestos.
 
 ## Etapa 4 — A rede e o treino (uma surpresa)
 
-A rede base era 50 → 64 → 32 → 1, com 5377 parâmetros. Ela treina em 0.04 s por época.
+A rede base era 50 → 64 → 32 → 1, com 5377 parâmetros. Ela treina em ~0.05 s por época.
 A varredura de lr deu a menor perda de validação em 1e-3.
 
 **Surpresa:** a perda de validação atinge o mínimo na época 11, mas a PR-AUC de validação
-continua subindo até a época ~26. A perda (log-loss) pune a confiança excessiva antes de a
+continua subindo até as épocas ~30–40 (0.7727 na 26). A perda (log-loss) pune a confiança excessiva antes de a
 ordenação piorar. Parar pela perda (como no esqueleto do enunciado) é conservador. Mantivemos
 a parada pela perda e registramos a discordância.
 
@@ -81,12 +83,14 @@ configuração num commit antes de criar o script do teste.
 - MLP: **0.7964 ± 0.0031**, contra 0.7517 da logística. O critério foi atingido
   (+0.0447, cerca de 14 vezes o dp).
 - HGB: **0.8409**. A rede não é o melhor modelo, e dissemos isso.
-- Limiar ≈ 0.53, e não 0.25. O `pos_weight` ≈ 3.15 já "embute" um custo de ~3:1 nas
-  probabilidades. Então o limiar de custo 3:1 sobre a saída da rede cai perto de 0.5.
+- Limiar ≈ 0.53, e não 0.25. O `pos_weight` ≈ 3.15 multiplica as **chances** p/(1−p) da
+  saída por ~3.15. Então o limiar de custo 3:1 (0.25 real, chance 1/3) vira chance ≈ 1.05
+  na saída, ou seja, ≈ 0.51.
 
 ## Etapa 7 — Erros
 
-- O maior erro é em `relationship = Husband` (32.5%), quase todo FP. Os casados têm
+- Entre os subgrupos com n ≥ 100, o maior erro é em `relationship = Husband` (32.5%),
+  quase todo FP. Os casados têm
   prevalência ~45%, perto da indecisão, e o custo 3:1 empurra o limiar a favor de marcar
   `>50K`.
 - Mulheres, pessoas negras e jovens têm FNR alto: a rede aprendeu as taxas-base de 1994.
@@ -107,8 +111,8 @@ configuração num commit antes de criar o script do teste.
 | Por que He e não Glorot? | He compensa a ReLU zerar metade das ativações (variância 2/fan_in). Na saída, que é linear, usamos Glorot. |
 | Como funciona a parada antecipada? | A cada época mede a perda de validação. Se melhorou, guarda uma **cópia** (`deepcopy`) dos pesos. Depois de 15 épocas sem melhorar, para e recarrega a melhor cópia. |
 | Por que AdamW se o weight decay final é 0? | Para a comparação do passo 4 ser limpa: com `weight_decay = 0` o AdamW é o Adam, e o mesmo otimizador serve para todas as variantes. O decaimento só vai nas matrizes de pesos. |
-| Por que o limiar é 0.53 se o custo é 3:1? | Com probabilidades calibradas, o ótimo seria 0.25. Mas o `pos_weight` infla as probabilidades na mesma proporção (0.5 na saída ≈ 0.24 real). A varredura na validação acha 0.53 sem precisar de calibração. |
+| Por que o limiar é 0.53 se o custo é 3:1? | Com probabilidades calibradas, o ótimo seria 0.25. Mas o `pos_weight` multiplica as **chances** da saída por ~3.15 (o logit sobe ln 3.15). 0.5 na saída equivale a 1/(1 + 3.15) ≈ 0.24 real, e 0.25 real equivale a ≈ 0.51 na saída. A varredura na validação acha 0.53 sem precisar de calibração. |
 | A rede valeu a pena? | Contra a logística, sim (+0.045 de PR-AUC, cerca de 14 dp, e −7.7% de custo). Contra o boosting, não: o HGB ficou 0.0445 acima. Em produção, usaríamos árvores. |
-| O teste influenciou alguma escolha? | Não. A configuração foi congelada no commit `f89dce2`, e o script do teste só foi criado depois (`1d4da6b`). O limiar e a época vêm da validação. |
-| Qual o subgrupo de maior erro e por quê? | `Husband`, com 32.5%, quase tudo FP. A prevalência é de ~45% e o custo 3:1 empurra para marcar `>50K`. |
+| O teste influenciou alguma escolha? | Não. A configuração está congelada em `comum.py` (commit `f89dce2`), e o script do teste entra no commit seguinte (`1d4da6b`). Os commits mostram a ordem, não o horário. A garantia está no código: o `s56` só lê `CONFIG_ESCOLHIDA`, e o limiar e a época vêm da validação. |
+| Qual o subgrupo de maior erro e por quê? | Entre os grupos com n ≥ 100, `Husband`, com 32.5%, quase tudo FP. A prevalência é de ~45% e o custo 3:1 empurra para marcar `>50K`. (`Married-AF-spouse` tem n = 6: é ruído.) |
 | A permutation importance bate com o EDA? | Em boa parte (Spearman 0.72). Exceção: `relationship`, que é redundante com `marital-status` + `sex`. A permutação subestima features correlacionadas. |

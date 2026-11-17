@@ -1,9 +1,8 @@
-# Dependências da entrega 2 (além das do EDA, no requirements.txt da raiz).
-# torch para CPU basta (a rede tem ~3 mil parâmetros; cada época leva ~0.05 s):
+# Dependências da entrega 2, com as versões da execução registrada em saida.txt
+# (Python 3.12.10). torch para CPU basta: a rede tem ~3 mil parâmetros.
 #   pip install -r docs/projects/classification/code/requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
-# Versões da execução registrada em saida.txt:
-numpy>=2.0
-pandas>=2.0
-matplotlib>=3.9
-scikit-learn>=1.4
-torch>=2.2
+numpy==2.5.5
+pandas==3.1.1
+matplotlib==3.11.2
+scikit-learn==1.9.1
+torch==2.15.0
