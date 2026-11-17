@@ -91,7 +91,8 @@ escolhida = tab.iloc[0]
 print("ESCOLHIDA (maior PR-AUC média de validação):", escolhida.config, "->", escolhida.cfg)
 
 # ---------------------------------------------------------------- Figura 2
-fig, (a, b) = plt.subplots(1, 2, figsize=(12, 4.3))
+fig, (a, b) = plt.subplots(1, 2, figsize=(13, 4.6), layout="constrained",
+                           gridspec_kw={"width_ratios": [1.15, 1]})
 cores = dict(zip(VARIANTES, [CORES[1], CORES[0], CORES[2], CORES[3], CORES[4], "#444444"]))
 for nome, cfg in VARIANTES.items():
     _, h, _ = treina(d, {**cfg, "max_epocas": 80}, seed=42, parada=False)
@@ -102,12 +103,13 @@ a.set_title("(a) perda de validação, 80 épocas sem parar (seed 42)")
 a.legend(fontsize=8)
 parteA = tab[tab.parte.str.startswith("A")].set_index("config").loc[list(VARIANTES)]
 y = np.arange(len(parteA))
-b.barh(y, parteA.prauc_val_media, xerr=parteA.prauc_val_dp, color=[cores[n] for n in parteA.index],
-       label="média ± dp (3 seeds)")
+b.barh(y, parteA.prauc_val_media, color=[cores[n] for n in parteA.index])
+b.errorbar(parteA.prauc_val_media, y, xerr=parteA.prauc_val_dp, fmt="none", ecolor="black",
+           capsize=3, label="média ± dp (3 seeds)")
 b.set_yticks(y, parteA.index)
 b.invert_yaxis()
-lo = parteA.prauc_val_media.min() - 0.01
-b.set_xlim(lo, parteA.prauc_val_media.max() + 0.01)
+b.set_xlim(parteA.prauc_val_media.min() - 0.01,
+           (parteA.prauc_val_media + parteA.prauc_val_dp).max() + 0.005)
 b.set_xlabel("PR-AUC na validação (com parada antecipada)")
 b.set_title("(b) PR-AUC de validação por regularização")
 b.legend(loc="lower right", fontsize=8)
